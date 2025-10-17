@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang='en'>
+	<!--
+		🦙 Ollama's Adventure - Alpaca Jump Game 🦙
+	
+		A fun endless runner game inspired by Chrome's dinosaur game!
+	
+		Features:
+		- Double jump mechanic for air control
+		- Triple jump boost with cooldown (horizontal dash!)
+		- Increasing difficulty as you score points
+		- Particle effects and smooth animations
+		- Sound effects (toggle with button)
+		- High score tracking
+	
+		Controls:
+		- SPACE or Click/Tap to jump
+		- Press again in mid-air for double jump
+		- Press a third time for the triple jump boost (5 second cooldown)
+	-->
+	<head>
+		<meta charset='UTF-8'>
+		<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+		<title>Ollama's Adventure - Alpaca Jump Game</title>
+		<style>
+			/* ===== GLOBAL STYLES ===== */
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+			
+			body {
+				font-family: 'Comic Sans MS', 'Segoe UI', cursive, sans-serif;
+				background: linear-gradient(to bottom, #87CEEB 0%, #98D8E8 50%, #B0E0E6 100%);
+				height: 100vh;
+				overflow: hidden;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
+			
+			/* ===== GAME CONTAINER ===== */
+			#gameContainer {
+				position: relative;
+				width: 900px;
+				height: 500px;
+				border-radius: 20px;
+				box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+				overflow: hidden;
+				background: linear-gradient(to bottom, #FFB6C1 0%, #FFE4E1 100%);
+			}
+			
+			#gameCanvas {
+				position: absolute;
+				top: 0;
+				left: 0;
+				cursor: pointer;
+			}
+			
+			/* ===== MENU SCREENS ===== */
+			#startScreen, #gameOverScreen {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: rgba(255, 255, 255, 0.95);
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				z-index: 10;
+				backdrop-filter: blur(5px);
+			}
+			
+			.gameTitle {
+				font-size: 48px;
+				color: #FF69B4;
+				margin-bottom: 20px;
+				text-shadow: 3px 3px 0 #FFB6C1;
+				animation: bounce 1s ease-in-out infinite;
+			}
+			
+			@keyframes bounce {
+				0%, 100% { transform: translateY(0); }
+				50% { transform: translateY(-10px); }
+			}
+			
+			.gameSubtitle {
+				font-size: 20px;
+				color: #666;
+				margin-bottom: 30px;
+			}
+			
+			.btn {
+				padding: 15px 40px;
+				font-size: 24px;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				border: none;
+				border-radius: 50px;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+				font-family: inherit;
+			}
+			
+			.btn:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+			}
+			
+			.btn:active {
+				transform: translateY(0);
+			}
+			
+			/* ===== SCORE DISPLAYS ===== */
+			.scoreDisplay {
+				position: absolute;
+				top: 20px;
+				left: 20px;
+				font-size: 24px;
+				color: white;
+				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+				z-index: 5;
+			}
+			
+			.highScoreDisplay {
+				position: absolute;
+				top: 20px;
+				right: 20px;
+				font-size: 20px;
+				color: #FFD700;
+				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+				z-index: 5;
+			}
+			
+			.finalScore {
+				font-size: 36px;
+				color: #333;
+				margin: 20px 0;
+			}
+			
+			.newRecord {
+				color: #FF69B4;
+				font-size: 28px;
+				animation: pulse 0.5s ease-in-out infinite;
+				margin: 10px 0;
+			}
+			
+			@keyframes pulse {
+				0%, 100% { transform: scale(1); }
+				50% { transform: scale(1.1); }
+			}
+			
+			/* ===== INSTRUCTIONS & EMOJI ===== */
+			.instructions {
+				text-align: center;
+				color: #666;
+				font-size: 18px;
+				margin: 20px 0;
+				line-height: 1.5;
+			}
+			
+			.alpaca-emoji {
+				font-size: 60px;
+				margin: 20px;
+				animation: wiggle 2s ease-in-out infinite;
+			}
+			
+			@keyframes wiggle {
+				0%, 100% { transform: rotate(-5deg); }
+				50% { transform: rotate(5deg); }
+			}
+			
+			/* ===== SOUND TOGGLE ===== */
+			#soundToggle {
+				position: absolute;
+				bottom: 20px;
+				right: 20px;
+				padding: 10px;
+				background: rgba(255, 255, 255, 0.8);
+				border-radius: 50%;
+				cursor: pointer;
+				z-index: 10;
+				font-size: 24px;
+				transition: all 0.3s ease;
+			}
+			
+			#soundToggle:hover {
+				background: rgba(255, 255, 255, 1);
+				transform: scale(1.1);
+			}
+		</style>
+	</head>
+	<body>
+		<div id='gameContainer'>
+			<canvas id='gameCanvas' width='900' height='500'></canvas>
+			
+			<!-- Start Screen -->
+			<div id='startScreen'>
+				<div class='alpaca-emoji'>🦙</div>
+				<h1 class='gameTitle'>Ollama's Adventure!</h1>
+				<p class='gameSubtitle'>Jump your way to glory!</p>
+				<div class='instructions'>
+					Press SPACE or Click/Tap to jump<br>
+					Avoid the cacti and rocks!<br>
+					The game gets faster as you progress!
+				</div>
+				<button class='btn' onclick='startGame()'>Start Adventure</button>
+			</div>
+			
+			<!-- Game Over Screen -->
+			<div id='gameOverScreen' style='display: none;'>
+				<div class='alpaca-emoji'>😵</div>
+				<h2 class='gameTitle'>Game Over!</h2>
+				<div class='finalScore'>Score: <span id='finalScore'>0</span></div>
+				<div id='newRecord' class='newRecord' style='display: none;'>🎉 New Record! 🎉</div>
+				<button class='btn' onclick='retryGame()'>Try Again</button>
+			</div>
+			
+			<!-- HUD -->
+			<div class='scoreDisplay'>Score: <span id='score'>0</span></div>
+			<div class='highScoreDisplay'>Best: <span id='highScore'>0</span></div>
+			
+			<!-- Sound Toggle -->
+			<div id='soundToggle' onclick='toggleSound()'>🔊</div>
+		</div>
+		
+		<script>
+			// =====================================================
+			// GAME INITIALIZATION
+			// =====================================================
+			
+			const canvas = document.getElementById('gameCanvas')
+			const ctx = canvas.getContext('2d')
+			
+			// Game state variables
+			let gameState = 'menu' // Possible values: 'menu', 'playing', 'gameover'
+			let score = 0
+			let highScore = localStorage.getItem('ollamaHighScore') || 0
+			let gameSpeed = 5
+			let soundEnabled = true
+			let animationId
+			let audioContext
+			
+			// Game object arrays
+			let obstacles = []
+			let clouds = []
+			let particles = []
+			
+			// =====================================================
+			// AUDIO SYSTEM
+			// =====================================================
+			
+			function initAudio() {
+				if (!audioContext) {
+					audioContext = new (window.AudioContext || window.webkitAudioContext)()
+				}
+			}
+			
+			// Generate procedural sound effects using Web Audio API
+			function playSound(type) {
+				if (!soundEnabled || !audioContext) return
+				
+				const oscillator = audioContext.createOscillator()
+				const gainNode = audioContext.createGain()
+				
+				oscillator.connect(gainNode)
+				gainNode.connect(audioContext.destination)
+				
+				const currentTime = audioContext.currentTime
+				
+				switch (type) {
+					case 'jump':
+						oscillator.type = 'sine'
+						oscillator.frequency.setValueAtTime(400, currentTime)
+						oscillator.frequency.exponentialRampToValueAtTime(800, currentTime + 0.1)
+						gainNode.gain.setValueAtTime(0.3, currentTime)
+						gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.2)
+						oscillator.start(currentTime)
+						oscillator.stop(currentTime + 0.2)
+						break
+					
+					case 'score':
+						oscillator.type = 'square'
+						oscillator.frequency.setValueAtTime(523.25, currentTime) // C5
+						oscillator.frequency.setValueAtTime(659.25, currentTime + 0.1) // E5
+						oscillator.frequency.setValueAtTime(783.99, currentTime + 0.2) // G5
+						gainNode.gain.setValueAtTime(0.2, currentTime)
+						gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.3)
+						oscillator.start(currentTime)
+						oscillator.stop(currentTime + 0.3)
+						break
+					
+					case 'gameOver':
+						oscillator.type = 'sawtooth'
+						oscillator.frequency.setValueAtTime(400, currentTime)
+						oscillator.frequency.exponentialRampToValueAtTime(100, currentTime + 0.5)
+						gainNode.gain.setValueAtTime(0.4, currentTime)
+						gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.5)
+						oscillator.start(currentTime)
+						oscillator.stop(currentTime + 0.5)
+						break
+					
+					case 'collect':
+						oscillator.type = 'triangle'
+						oscillator.frequency.setValueAtTime(800, currentTime)
+						oscillator.frequency.exponentialRampToValueAtTime(1200, currentTime + 0.05)
+						oscillator.frequency.exponentialRampToValueAtTime(1600, currentTime + 0.1)
+						gainNode.gain.setValueAtTime(0.2, currentTime)
+						gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.15)
+						oscillator.start(currentTime)
+						oscillator.stop(currentTime + 0.15)
+						break
+				}
+			}
+			
+			// =====================================================
+			// GAME OBJECTS
+			// =====================================================
+			
+			// Parallax background layers for depth effect
+			const backgrounds = [
+				{ x: 0, speed: 0.5, color: '#E6F3FF' }, // Far mountains
+				{ x: 0, speed: 1, color: '#B8E6B8' },   // Mid hills
+				{ x: 0, speed: 2, color: '#90EE90' },   // Near grass
+			]
+			
+			// Player character (Ollama the Alpaca!)
+			const ollama = {
+				x: 100,
+				y: 350,
+				width: 60,
+				height: 80,
+				velocityY: 0,
+				velocityX: 0,
+				jumping: false,
+				doubleJumpAvailable: false,
+				tripleJumpAvailable: true,
+				tripleJumpCooldown: 0,
+				tripleJumpMaxCooldown: 5000, // 5 seconds in milliseconds
+				jumpPower: -18,
+				gravity: 0.65,
+				groundY: 350,
+				legAnimation: 0,
+			}
+			
+			// =====================================================
+			// CLASSES
+			// =====================================================
+			
+			// Obstacle class (cacti and rocks)
+			class Obstacle {
+				constructor() {
+					this.width = 30 + Math.random() * 20
+					this.height = 40 + Math.random() * 30
+					this.x = canvas.width
+					this.y = ollama.groundY + 40 - this.height
+					this.type = Math.random() > 0.5 ? 'cactus' : 'rock'
+					this.passed = false
+				}
+				
+				update() {
+					this.x -= gameSpeed
+				}
+				
+				draw() {
+					ctx.save()
+					
+					if (this.type === 'cactus') {
+						// Draw cactus body
+						ctx.fillStyle = '#228B22'
+						ctx.fillRect(this.x + this.width * 0.3, this.y, this.width * 0.4, this.height)
+						ctx.fillRect(this.x, this.y + this.height * 0.3, this.width * 0.7, this.width * 0.3)
+						ctx.fillRect(this.x + this.width * 0.6, this.y + this.height * 0.5, this.width * 0.4, this.width * 0.3)
+						
+						// Draw cactus spikes
+						ctx.strokeStyle = '#006400'
+						ctx.lineWidth = 2
+						for (let i = 0; i < 5; i++) {
+							ctx.beginPath()
+							ctx.moveTo(this.x + this.width * 0.3, this.y + i * 10)
+							ctx.lineTo(this.x + this.width * 0.3 - 5, this.y + i * 10 - 3)
+							ctx.stroke()
+							ctx.beginPath()
+							ctx.moveTo(this.x + this.width * 0.7, this.y + i * 10)
+							ctx.lineTo(this.x + this.width * 0.7 + 5, this.y + i * 10 - 3)
+							ctx.stroke()
+						}
+					} else {
+						// Draw rock
+						ctx.fillStyle = '#8B7355'
+						ctx.beginPath()
+						ctx.ellipse(this.x + this.width / 2, this.y + this.height / 2,
+								this.width / 2, this.height / 2, 0, 0, Math.PI * 2)
+						ctx.fill()
+						
+						// Rock texture detail
+						ctx.fillStyle = '#6B5345'
+						ctx.beginPath()
+						ctx.ellipse(this.x + this.width * 0.3, this.y + this.height * 0.3,
+								this.width * 0.15, this.height * 0.15, 0, 0, Math.PI * 2)
+						ctx.fill()
+					}
+					
+					ctx.restore()
+				}
+			}
+			
+			// Cloud class for background decoration
+			class Cloud {
+				constructor() {
+					this.x = canvas.width + Math.random() * 200
+					this.y = Math.random() * 150
+					this.speed = 0.5 + Math.random() * 1
+					this.size = 20 + Math.random() * 30
+				}
+				
+				update() {
+					this.x -= this.speed
+					if (this.x < -100) {
+						this.x = canvas.width + Math.random() * 200
+						this.y = Math.random() * 150
+					}
+				}
+				
+				draw() {
+					ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
+					ctx.beginPath()
+					ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
+					ctx.arc(this.x + this.size * 0.5, this.y, this.size * 0.8, 0, Math.PI * 2)
+					ctx.arc(this.x - this.size * 0.5, this.y, this.size * 0.8, 0, Math.PI * 2)
+					ctx.fill()
+				}
+			}
+			
+			// Particle class for visual effects
+			class Particle {
+				constructor(x, y) {
+					this.x = x
+					this.y = y
+					this.vx = Math.random() * 4 - 2
+					this.vy = Math.random() * -5 - 2
+					this.life = 1
+					this.color = `hsl(${Math.random() * 60 + 30}, 100%, 60%)`
+				}
+				
+				update() {
+					this.x += this.vx
+					this.y += this.vy
+					this.vy += 0.2 // Gravity
+					this.life -= 0.02
+				}
+				
+				draw() {
+					ctx.save()
+					ctx.globalAlpha = this.life
+					ctx.fillStyle = this.color
+					ctx.beginPath()
+					ctx.arc(this.x, this.y, 3, 0, Math.PI * 2)
+					ctx.fill()
+					ctx.restore()
+				}
+			}
+			
+			// =====================================================
+			// DRAWING FUNCTIONS
+			// =====================================================
+			
+			// Draw the alpaca character
+			function drawOllama() {
+				ctx.save()
+				
+				// Body
+				ctx.fillStyle = '#FFF8DC'
+				ctx.fillRect(ollama.x, ollama.y + 30, ollama.width, ollama.height - 30)
+				
+				// Head
+				ctx.fillStyle = '#FFE4B5'
+				ctx.beginPath()
+				ctx.ellipse(ollama.x + ollama.width / 2, ollama.y + 20, 25, 20, 0, 0, Math.PI * 2)
+				ctx.fill()
+				
+				// Ears
+				ctx.fillStyle = '#FFE4B5'
+				ctx.beginPath()
+				ctx.ellipse(ollama.x + 15, ollama.y + 10, 8, 12, -0.3, 0, Math.PI * 2)
+				ctx.fill()
+				ctx.beginPath()
+				ctx.ellipse(ollama.x + ollama.width - 15, ollama.y + 10, 8, 12, 0.3, 0, Math.PI * 2)
+				ctx.fill()
+				
+				// Eyes
+				ctx.fillStyle = '#000'
+				ctx.beginPath()
+				ctx.arc(ollama.x + 20, ollama.y + 20, 3, 0, Math.PI * 2)
+				ctx.arc(ollama.x + ollama.width - 20, ollama.y + 20, 3, 0, Math.PI * 2)
+				ctx.fill()
+				
+				// Nose
+				ctx.fillStyle = '#FF69B4'
+				ctx.beginPath()
+				ctx.ellipse(ollama.x + ollama.width / 2, ollama.y + 28, 4, 3, 0, 0, Math.PI * 2)
+				ctx.fill()
+				
+				// Animated legs
+				ctx.fillStyle = '#FFF8DC'
+				const legOffset = Math.sin(ollama.legAnimation) * 5
+				ctx.fillRect(ollama.x + 10, ollama.y + ollama.height - 20, 8, 20 + legOffset)
+				ctx.fillRect(ollama.x + 20, ollama.y + ollama.height - 20, 8, 20 - legOffset)
+				ctx.fillRect(ollama.x + ollama.width - 20, ollama.y + ollama.height - 20, 8, 20 + legOffset)
+				ctx.fillRect(ollama.x + ollama.width - 10, ollama.y + ollama.height - 20, 8, 20 - legOffset)
+				
+				// Fluffy wool texture
+				ctx.strokeStyle = '#F0E68C'
+				ctx.lineWidth = 2
+				for (let i = 0; i < 5; i++) {
+					ctx.beginPath()
+					ctx.arc(ollama.x + 10 + i * 10, ollama.y + 40, 5, 0, Math.PI * 2)
+					ctx.stroke()
+				}
+				
+				// Happy mouth
+				ctx.strokeStyle = '#000'
+				ctx.lineWidth = 2
+				ctx.beginPath()
+				ctx.arc(ollama.x + ollama.width / 2, ollama.y + 30, 8, 0, Math.PI)
+				ctx.stroke()
+				
+				ctx.restore()
+			}
+			
+			// Draw background with parallax effect
+			function drawBackground() {
+				// Sky gradient
+				const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
+				gradient.addColorStop(0, '#87CEEB')
+				gradient.addColorStop(0.7, '#98D8E8')
+				gradient.addColorStop(1, '#B0E0E6')
+				ctx.fillStyle = gradient
+				ctx.fillRect(0, 0, canvas.width, canvas.height)
+				
+				// Draw clouds
+				clouds.forEach(cloud => {
+					cloud.update()
+					cloud.draw()
+				})
+				
+				// Draw parallax background layers
+				backgrounds.forEach((bg, index) => {
+					ctx.fillStyle = bg.color
+					ctx.globalAlpha = 0.3 + index * 0.2
+					
+					if (index === 0) {
+						// Far mountains
+						ctx.beginPath()
+						ctx.moveTo(bg.x, canvas.height)
+						ctx.lineTo(bg.x, 300)
+						ctx.lineTo(bg.x + 200, 250)
+						ctx.lineTo(bg.x + 400, 280)
+						ctx.lineTo(bg.x + 600, 240)
+						ctx.lineTo(bg.x + 800, 290)
+						ctx.lineTo(bg.x + canvas.width, 270)
+						ctx.lineTo(bg.x + canvas.width, canvas.height)
+						ctx.fill()
+					} else if (index === 1) {
+						// Mid hills
+						ctx.beginPath()
+						ctx.moveTo(bg.x, canvas.height)
+						ctx.lineTo(bg.x, 350)
+						ctx.lineTo(bg.x + 150, 320)
+						ctx.lineTo(bg.x + 300, 340)
+						ctx.lineTo(bg.x + 450, 310)
+						ctx.lineTo(bg.x + 600, 330)
+						ctx.lineTo(bg.x + canvas.width, 350)
+						ctx.lineTo(bg.x + canvas.width, canvas.height)
+						ctx.fill()
+					} else {
+						// Near ground
+						ctx.fillRect(bg.x, ollama.groundY + 80, canvas.width, canvas.height - ollama.groundY - 80)
+					}
+					
+					// Scroll background
+					bg.x -= bg.speed
+					if (bg.x <= -canvas.width) {
+						bg.x = 0
+					}
+				})
+				
+				ctx.globalAlpha = 1
+				
+				// Ground line
+				ctx.strokeStyle = '#8B7355'
+				ctx.lineWidth = 3
+				ctx.beginPath()
+				ctx.moveTo(0, ollama.groundY + 80)
+				ctx.lineTo(canvas.width, ollama.groundY + 80)
+				ctx.stroke()
+			}
+			
+			// =====================================================
+			// GAME LOOP
+			// =====================================================
+			
+			// Update game state
+			function update() {
+				if (gameState !== 'playing') return
+				
+				// Update triple jump cooldown timer
+				if (ollama.tripleJumpCooldown > 0) {
+					ollama.tripleJumpCooldown -= 16.67 // ~1 frame at 60fps
+					if (ollama.tripleJumpCooldown < 0) {
+						ollama.tripleJumpCooldown = 0
+					}
+				}
+				
+				// Apply physics to Ollama
+				ollama.velocityY += ollama.gravity
+				ollama.y += ollama.velocityY
+				
+				// Handle horizontal velocity from triple jump
+				if (ollama.velocityX > 0) {
+					ollama.x += ollama.velocityX
+					ollama.velocityX *= 0.92 // Friction/decay
+					if (ollama.velocityX < 0.1) {
+						ollama.velocityX = 0
+					}
+				}
+				
+				// Keep Ollama on screen
+				if (ollama.x > canvas.width - ollama.width - 50) {
+					ollama.x = canvas.width - ollama.width - 50
+					ollama.velocityX = 0
+				}
+				
+				// Return to starting position
+				if (ollama.velocityX === 0 && ollama.x > 100) {
+					ollama.x -= 2
+					if (ollama.x < 100) {
+						ollama.x = 100
+					}
+				}
+				
+				// Animate legs
+				ollama.legAnimation += 0.3
+				
+				// Ground collision
+				if (ollama.y >= ollama.groundY) {
+					ollama.y = ollama.groundY
+					ollama.velocityY = 0
+					ollama.jumping = false
+					ollama.doubleJumpAvailable = false
+					ollama.tripleJumpAvailable = true
+				}
+				
+				// Update and check obstacles
+				obstacles = obstacles.filter(obstacle => {
+					obstacle.update()
+					
+					// Collision detection
+					if (ollama.x < obstacle.x + obstacle.width &&
+							ollama.x + ollama.width > obstacle.x &&
+							ollama.y + ollama.height > obstacle.y) {
+						gameOver()
+						return false
+					}
+					
+					// Score points when passing obstacles
+					if (!obstacle.passed && obstacle.x + obstacle.width < ollama.x) {
+						obstacle.passed = true
+						score++
+						document.getElementById('score').textContent = score
+						playSound('score')
+						
+						// Add celebration particles
+						for (let i = 0; i < 10; i++) {
+							particles.push(new Particle(ollama.x + ollama.width / 2, ollama.y))
+						}
+						
+						// Increase difficulty every 5 points
+						if (score % 5 === 0) {
+							gameSpeed += 0.5
+						}
+					}
+					
+					return obstacle.x > -obstacle.width
+				})
+				
+				// Spawn new obstacles
+				if (Math.random() < 0.02 && obstacles.length < 3) {
+					obstacles.push(new Obstacle())
+				}
+				
+				// Update particles
+				particles = particles.filter(particle => {
+					particle.update()
+					return particle.life > 0
+				})
+			}
+			
+			// Render everything
+			function draw() {
+				ctx.clearRect(0, 0, canvas.width, canvas.height)
+				
+				drawBackground()
+				
+				// Draw obstacles
+				obstacles.forEach(obstacle => obstacle.draw())
+				
+				// Draw particles
+				particles.forEach(particle => particle.draw())
+				
+				// Draw player
+				drawOllama()
+				
+				// Draw UI elements
+				if (gameState === 'playing') {
+					// Speed indicator
+					ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
+					ctx.fillRect(10, canvas.height - 30, 100, 20)
+					ctx.fillStyle = '#FF69B4'
+					ctx.fillRect(10, canvas.height - 30, (gameSpeed / 15) * 100, 20)
+					ctx.strokeStyle = '#333'
+					ctx.lineWidth = 2
+					ctx.strokeRect(10, canvas.height - 30, 100, 20)
+					ctx.fillStyle = '#333'
+					ctx.font = '12px Comic Sans MS'
+					ctx.fillText('Speed', 120, canvas.height - 15)
+					
+					// Triple jump cooldown indicator
+					const cooldownX = 10
+					const cooldownY = canvas.height - 60
+					const cooldownSize = 30
+					
+					// Background circle
+					ctx.beginPath()
+					ctx.arc(cooldownX + cooldownSize / 2, cooldownY + cooldownSize / 2, cooldownSize / 2, 0, Math.PI * 2)
+					ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'
+					ctx.fill()
+					ctx.strokeStyle = '#333'
+					ctx.lineWidth = 2
+					ctx.stroke()
+					
+					// Cooldown progress
+					if (ollama.tripleJumpCooldown > 0) {
+						const progress = 1 - (ollama.tripleJumpCooldown / ollama.tripleJumpMaxCooldown)
+						ctx.beginPath()
+						ctx.arc(cooldownX + cooldownSize / 2, cooldownY + cooldownSize / 2, cooldownSize / 2 - 3,
+								-Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * progress))
+						ctx.strokeStyle = '#FFD700'
+						ctx.lineWidth = 4
+						ctx.stroke()
+						
+						// Countdown text
+						const secondsLeft = Math.ceil(ollama.tripleJumpCooldown / 1000)
+						ctx.fillStyle = '#333'
+						ctx.font = 'bold 14px Comic Sans MS'
+						ctx.textAlign = 'center'
+						ctx.fillText(secondsLeft, cooldownX + cooldownSize / 2, cooldownY + cooldownSize / 2 + 5)
+						ctx.textAlign = 'left'
+					} else {
+						// Ready indicator - pulsing lightning bolt
+						const pulseScale = 1 + Math.sin(Date.now() / 200) * 0.2
+						ctx.save()
+						ctx.translate(cooldownX + cooldownSize / 2, cooldownY + cooldownSize / 2)
+						ctx.scale(pulseScale, pulseScale)
+						ctx.fillStyle = '#FFD700'
+						ctx.font = 'bold 20px Comic Sans MS'
+						ctx.textAlign = 'center'
+						ctx.fillText('⚡', 0, 6)
+						ctx.textAlign = 'left'
+						ctx.restore()
+					}
+					
+					// Label
+					ctx.fillStyle = '#333'
+					ctx.font = '10px Comic Sans MS'
+					ctx.fillText('Boost', cooldownX + cooldownSize + 5, cooldownY + cooldownSize / 2 + 3)
+				}
+			}
+			
+			// Main game loop
+			function gameLoop() {
+				update()
+				draw()
+				
+				if (gameState === 'playing') {
+					animationId = requestAnimationFrame(gameLoop)
+				}
+			}
+			
+			// =====================================================
+			// GAME CONTROLS
+			// =====================================================
+			
+			// Jump mechanic with double and triple jump
+			function jump() {
+				if (gameState !== 'playing') return
+				
+				// First jump (from ground)
+				if (!ollama.jumping) {
+					ollama.velocityY = ollama.jumpPower
+					ollama.jumping = true
+					ollama.doubleJumpAvailable = true
+					playSound('jump')
+				}
+				// Double jump (in air)
+				else if (ollama.doubleJumpAvailable) {
+					ollama.velocityY = ollama.jumpPower * 0.85
+					ollama.doubleJumpAvailable = false
+					playSound('collect')
+					
+					// Visual feedback
+					for (let i = 0; i < 8; i++) {
+						particles.push(new Particle(ollama.x + ollama.width / 2, ollama.y + ollama.height))
+					}
+				}
+				// Triple jump (special boost with cooldown)
+				else if (ollama.tripleJumpAvailable && ollama.tripleJumpCooldown <= 0) {
+					ollama.velocityY = ollama.jumpPower * 0.7
+					
+					// Horizontal boost that scales with game speed
+					const horizontalBoost = gameSpeed * 2.5
+					ollama.velocityX = horizontalBoost
+					
+					ollama.tripleJumpAvailable = false
+					ollama.tripleJumpCooldown = ollama.tripleJumpMaxCooldown
+					playSound('score')
+					
+					// Rainbow particle burst
+					for (let i = 0; i < 15; i++) {
+						const particle = new Particle(ollama.x + ollama.width / 2, ollama.y + ollama.height)
+						particle.color = `hsl(${Math.random() * 360}, 100%, 60%)`
+						particles.push(particle)
+					}
+				}
+			}
+			
+			// =====================================================
+			// GAME STATE FUNCTIONS
+			// =====================================================
+			
+			// Start a new game
+			function startGame() {
+				initAudio()
+				document.getElementById('startScreen').style.display = 'none'
+				gameState = 'playing'
+				score = 0
+				gameSpeed = 5
+				obstacles = []
+				particles = []
+				
+				// Reset Ollama
+				ollama.x = 100
+				ollama.y = ollama.groundY
+				ollama.velocityY = 0
+				ollama.velocityX = 0
+				ollama.jumping = false
+				ollama.doubleJumpAvailable = false
+				ollama.tripleJumpAvailable = true
+				ollama.tripleJumpCooldown = 0
+				
+				// Update UI
+				document.getElementById('score').textContent = score
+				document.getElementById('highScore').textContent = highScore
+				
+				// Initialize clouds
+				for (let i = 0; i < 5; i++) {
+					clouds.push(new Cloud())
+				}
+				
+				gameLoop()
+			}
+			
+			// Handle game over
+			function gameOver() {
+				gameState = 'gameover'
+				playSound('gameOver')
+				cancelAnimationFrame(animationId)
+				
+				// Check for new high score
+				if (score > highScore) {
+					highScore = score
+					localStorage.setItem('ollamaHighScore', highScore)
+					document.getElementById('newRecord').style.display = 'block'
+				} else {
+					document.getElementById('newRecord').style.display = 'none'
+				}
+				
+				document.getElementById('finalScore').textContent = score
+				document.getElementById('gameOverScreen').style.display = 'flex'
+			}
+			
+			// Retry after game over
+			function retryGame() {
+				document.getElementById('gameOverScreen').style.display = 'none'
+				startGame()
+			}
+			
+			// Toggle sound on/off
+			function toggleSound() {
+				soundEnabled = !soundEnabled
+				document.getElementById('soundToggle').textContent = soundEnabled ? '🔊' : '🔇'
+				if (soundEnabled) {
+					initAudio()
+					playSound('collect')
+				}
+			}
+			
+			// =====================================================
+			// EVENT LISTENERS
+			// =====================================================
+			
+			// Keyboard controls
+			document.addEventListener('keydown', (e) => {
+				if (e.code === 'Space') {
+					e.preventDefault()
+					if (gameState === 'menu') {
+						startGame()
+					} else {
+						jump()
+					}
+				}
+			})
+			
+			// Mouse/touch controls
+			canvas.addEventListener('click', () => {
+				if (gameState === 'playing') {
+					jump()
+				}
+			})
+			
+			canvas.addEventListener('touchstart', (e) => {
+				e.preventDefault()
+				if (gameState === 'playing') {
+					jump()
+				}
+			})
+			
+			// =====================================================
+			// INITIALIZE
+			// =====================================================
+			
+			// Display saved high score
+			document.getElementById('highScore').textContent = highScore
+		</script>
+	</body>
+</html>

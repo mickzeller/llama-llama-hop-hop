@@ -1,103 +1,40 @@
-import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="font-sans flex items-center justify-center min-h-screen bg-gradient-to-b from-sky-300 via-sky-200 to-sky-100">
+      <main className="flex flex-col items-center text-center max-w-2xl px-8">
+        <div className="text-8xl mb-8 animate-wiggle">🦙</div>
+        <h1 className="text-6xl font-bold text-pink-500 mb-4" style={{ textShadow: '3px 3px 0 #FFB6C1' }}>
+          Llama&apos;s Adventure
+        </h1>
+        <p className="text-2xl text-gray-700 mb-8">
+          Jump, dash, and dodge your way through an endless adventure!
+        </p>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 mb-8 shadow-xl">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Features</h2>
+          <ul className="text-left space-y-2 text-gray-700">
+            <li>🎮 <strong>Double Jump</strong> - Press jump again in mid-air!</li>
+            <li>⚡ <strong>Triple Jump Boost</strong> - Dash forward with a 5-second cooldown</li>
+            <li>📈 <strong>Progressive Difficulty</strong> - Gets faster as you score</li>
+            <li>🎵 <strong>Procedural Sound Effects</strong> - Dynamic audio using Web Audio API</li>
+            <li>✨ <strong>Particle Effects</strong> - Beautiful visual feedback</li>
+            <li>🏆 <strong>High Score Tracking</strong> - Beat your personal best!</li>
+          </ul>
         </div>
+
+        <Link
+          href="/game"
+          className="px-12 py-5 text-3xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full cursor-pointer transition-all duration-300 shadow-lg hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 font-bold"
+        >
+          Start Playing! 🎮
+        </Link>
+
+        <p className="text-sm text-gray-600 mt-8">
+          Use SPACE or click/tap to jump. Have fun!
+        </p>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
